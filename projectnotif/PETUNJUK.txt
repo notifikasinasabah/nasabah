@@ -1,0 +1,82 @@
+LAYANAN MANDIRI TASPEN - PETUNJUK PENGGUNAAN
+
+1. Pilih satu komputer kantor sebagai server. Komputer ini harus tetap menyala
+   dan terhubung ke jaringan kantor selama aplikasi digunakan.
+2. Jalankan Jalankan-Server.bat pada komputer tersebut. Jika Windows Firewall
+   bertanya, izinkan Python pada jaringan Private saja. Jangan mematikan firewall.
+3. Lihat alamat jaringan dan kode akses pengirim yang tercetak di jendela server.
+   Kode penerima untuk masing-masing unit terdapat di file kode-penerima.json.
+   Bagikan kode hanya kepada pegawai unit yang sesuai. Untuk mengganti kode,
+   ubah nilainya di file tersebut; setiap kode harus unik dan minimal 6 karakter.
+   File konfigurasi dapat dipindahkan dengan variabel
+   RUANG_LAYANAN_KODE_PENERIMA_FILE. Jangan bagikan file ini ke pengguna umum.
+   Kode akses tidak membedakan huruf besar/kecil dan spasi di awal/akhir diabaikan.
+4. Semua pengguna membuka alamat jaringan yang sama di Chrome dan memasukkan
+   kode akses pada halaman pertama. Kode satpam membuka input notifikasi saja.
+   Kode KCP membuka dashboard lengkap: ringkasan semua unit, input notifikasi,
+   daftar semua notifikasi, pencarian, filter, ubah status, dan hapus.
+5. Kode pegawai selain KCP membuka daftar notifikasi untuk unit masing-masing.
+   Pegawai dapat menandai notifikasi unitnya selesai dan menghapus riwayat
+   notifikasi yang sudah selesai, satu per satu atau sekaligus dengan memilih
+   riwayat pada tanggal yang sama; KCP dapat mengelola semua unit.
+   Satpam memilih unit tujuan saat menginput notifikasi.
+6. Biarkan server berjalan. Hentikan dengan Ctrl+C di jendela server.
+
+Semua notifikasi tersimpan permanen di database SQLite notifications.db pada
+komputer server, termasuk setelah server dimulai ulang. Saat pertama kali
+dijalankan, data lama dari notifications.json otomatis disalin ke database.
+Dashboard menyediakan kalender tanggal untuk melihat arsip per tanggal, bulan,
+dan tahun; data lama tetap tersimpan dan dapat dibuka kembali.
+Notifikasi yang baru dibuat, diubah, atau dihapus akan diperbarui langsung pada halaman penerima.
+Nama nasabah hanya boleh berisi huruf dan spasi. Nama nasabah dan keterangan
+dibatasi maksimal 200 karakter masing-masing.
+Formulir menerima satu foto JPG, PNG, atau WebP opsional dengan ukuran maksimal
+5 MB. Foto tersimpan bersama notifikasi dan hanya dapat dilihat oleh KCP atau
+pegawai unit tujuan.
+
+APLIKASI DI HP / PWA
+Aplikasi dapat dipasang dari browser sebagai aplikasi di layar utama, bukan
+diunduh melalui Play Store atau App Store. Android: buka alamat aplikasi di
+Chrome lalu tekan "Pasang aplikasi" atau pilih "Tambahkan ke layar utama".
+iPhone/iPad: buka alamat aplikasi di Safari, tekan Bagikan, lalu "Tambahkan ke
+Layar Utama". Instalasi pada telepon memerlukan alamat HTTPS yang sah dan dapat
+dijangkau oleh perangkat; alamat localhost hanya berfungsi pada komputer yang
+menjalankan server.
+Saat masuk, aplikasi otomatis meminta izin pemberitahuan desktop kepada browser.
+Jika izin sudah diberikan sebelumnya, pemberitahuan langsung aktif. Jika browser
+belum memberikan izin otomatis, pilih "Izinkan pemberitahuan" atau ubah izin
+situs melalui pengaturan browser. Halaman penerima tetap harus terbuka dan
+browser berjalan agar notifikasi desktop dapat diterima.
+
+AKSES DARI LUAR KANTOR / HOSTING PUBLIK
+Untuk membuka aplikasi dari internet, aplikasi harus dijalankan pada layanan
+hosting publik (atau server publik), menggunakan HTTPS dan penyimpanan persisten.
+Jangan meneruskan port 8000 langsung ke internet: server bawaan memakai HTTP.
+Folder ini menyediakan Dockerfile untuk layanan hosting yang menerima container,
+serta docker-compose.yml untuk uji lokal. Pada layanan hosting:
+1. Deploy menggunakan Dockerfile ini dan aktifkan HTTPS/domain dari penyedia.
+2. Atur port aplikasi menggunakan variabel PORT yang disediakan penyedia.
+3. Pasang persistent disk/volume pada /data agar database tidak hilang saat
+   aplikasi dimulai ulang atau di-deploy ulang.
+4. Atur RUANG_LAYANAN_DATABASE=/data/notifications.db,
+   RUANG_LAYANAN_PUBLIC_DEPLOYMENT=1, dan
+   RUANG_LAYANAN_COOKIE_SECURE=1.
+5. Atur RUANG_LAYANAN_KODE_PENGIRIM serta
+   RUANG_LAYANAN_KODE_PENERIMA_JSON. Buat semua kode acak dan unik minimal
+   16 karakter; jangan pakai nilai contoh di .env.example atau kode bawaan.
+   Simpan rahasia hanya di pengaturan environment/secrets penyedia hosting.
+6. Jalankan satu instance aplikasi saja. Sesi login dan pembaruan real-time
+   disimpan di memori proses dan belum disinkronkan antar-instance.
+Mode hosting publik menolak konfigurasi kode yang hilang atau pendek dan
+menambahkan atribut Secure pada cookie login. Pengaturan Docker Compose hanya
+membuka aplikasi di komputer sendiri (127.0.0.1:8000), bukan meng-host aplikasi
+untuk internet.
+
+PENTING: Kode akses dipakai bersama dan bukan akun individual. HTTPS dan kode
+acak tidak menggantikan autentikasi individual atau kebijakan perlindungan data.
+Gunakan hanya untuk percobaan dengan data contoh sampai layanan memiliki
+autentikasi serta kontrol akses yang disetujui organisasi.
+
+Lokasi database dapat diubah melalui variabel lingkungan
+RUANG_LAYANAN_DATABASE. Simpan database dan cadangannya di komputer server KCP
+yang terlindungi dan pastikan ada pencadangan rutin.

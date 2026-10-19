@@ -1,0 +1,16 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PORT: "8000"
+      RUANG_LAYANAN_DATABASE: /data/notifications.db
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - notification_data:/data
+
+volumes:
+  notification_data:

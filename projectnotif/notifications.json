@@ -1,0 +1,18 @@
+[
+  {
+    "id": "d44c4125-c50b-4119-940b-6bf1112d3dc7",
+    "customerName": "Agus",
+    "department": "COP",
+    "description": "ada yang mau ketemu",
+    "status": "done",
+    "createdAt": "2026-10-13T06:11:47.571495+00:00"
+  },
+  {
+    "id": "2029fea3-3808-49a0-bf62-a8a5fb5732f0",
+    "customerName": "Asep",
+    "department": "KCP",
+    "description": "ada yang mau ketemu pak boss",
+    "status": "active",
+    "createdAt": "2026-10-13T06:04:50.762608+00:00"
+  }
+]

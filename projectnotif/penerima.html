@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7f6">
+  <title>Notifikasi nasabah</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #18241f;
+      --muted: #77827d;
+      --line: #e8ece9;
+      --canvas: #f5f7f6;
+      --gold: #f2c200;
+      --gold-dark: #d6aa00;
+      --gold-soft: #fff6d5;
+      --amber: #a66b11;
+      --amber-soft: #fff4df;
+      --mandiri-blue: #003b71;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--canvas); color: var(--ink);
+      font: 14px Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    body:has(#app-shell:not([hidden])) {
+      background-color: var(--canvas);
+      background-image: linear-gradient(rgba(247, 249, 248, .32), rgba(247, 249, 248, .44)), url("/assets/taspen-service-background.png");
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .topbar {
+      position: relative;
+      height: 68px; padding: 0 max(5%, calc((100vw - 960px) / 2));
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(255,255,255,.94); border-bottom: 1px solid var(--line);
+    }
+    .brand { display: flex; align-items: center; gap: 8px; }
+    .topbar-actions { display: flex; align-items: center; gap: 12px; }
+    .topbar-actions { margin-right: 94px; }
+    .mandiri-logo { display: block; width: 76px; height: 44px; object-fit: contain; }
+    .danantara-logo { display: block; width: 76px; height: 22px; object-fit: contain; }
+    .topbar-danantara { position: absolute; top: 50%; right: max(5%, calc((100vw - 960px) / 2)); transform: translateY(-50%); }
+    .logout-button {
+      min-height: 36px; padding: 0 11px; border: 1px solid #e5c84c; border-radius: 8px;
+      background: var(--gold-soft); color: #725900; font-size: 11px; font-weight: 700;
+    }
+    .logout-button:hover { background: #ffed9b; }
+    .logout-button:disabled { opacity: .65; cursor: wait; }
+    .brand-caption { display: block; color: var(--muted); font-size: 10px; }
+    main { width: min(900px, 90%); margin: 0 auto; padding: 37px 0 56px; }
+    .heading { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 23px; }
+    .heading > div:first-child {
+      display: inline-flex; flex: 0 0 auto; width: fit-content; max-width: 100%; min-width: 0;
+      padding: clamp(10px, 2.5vw, 17px) clamp(12px, 3vw, 20px);
+      border: 1px solid rgba(255,255,255,.8); border-radius: 12px;
+      background: rgba(255,255,255,.9); box-shadow: 0 8px 28px rgba(20,38,30,.12);
+    }
+    h1 { margin: 0; font-size: clamp(25px, 4vw, 32px); letter-spacing: -1px; }
+    .heading h1 { max-width: 100%; font-size: clamp(18px, 4vw, 26px); line-height: 1.15; overflow-wrap: anywhere; }
+    .bell-button, .filter {
+      min-height: 38px; padding: 0 12px; border: 1px solid var(--line);
+      border-radius: 8px; background: #fff; color: #53625a; font-size: 11px; font-weight: 650;
+    }
+    .bell-button:hover { border-color: #e5c84c; color: #725900; }
+    .bell-button:disabled { opacity: .7; cursor: default; }
+    .permission-status { color: #53625a; font-size: 11px; }
+    .filter { min-width: 132px; }
+    .notice-box {
+      margin: 0 0 18px; padding: 15px 17px; border: 1px solid #ebe5cf;
+      border-radius: 10px; background: #fff; color: #637069; font-size: 11px; line-height: 1.55;
+    }
+    .notice-box.warning { margin-top: -8px; border-color: #f0dfb7; background: #fffaf0; }
+    .notice-box.warning[hidden] { display: none; }
+    .notice-box strong { color: #725900; }
+    .section-head {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 11px;
+      padding: 12px 14px; border: 1px solid rgba(255,255,255,.8); border-radius: 9px;
+      background: rgba(255,255,255,.92); box-shadow: 0 5px 18px rgba(20,38,30,.08);
+    }
+    h2 { margin: 0; font-size: 15px; }
+    .count { padding: 4px 8px; border-radius: 20px; background: #e9efeb; color: #53625a; font-size: 10px; font-weight: 750; }
+    .list { display: grid; gap: 10px; }
+    .card { position: relative; padding: 16px 17px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.94); box-shadow: 0 7px 24px rgba(20,38,30,.1); }
+    .card.new { border-color: #e5c84c; box-shadow: 0 0 0 3px rgba(214,170,0,.12); }
+    .card-completion { position: absolute; top: 13px; right: 14px; display: grid; width: 26px; height: 26px; place-items: center; border-radius: 50%; background: #218542; color: #fff; }
+    .card-completion svg { display: block; width: 16px; height: 16px; }
+    .badges { display: flex; flex-wrap: wrap; gap: 7px; margin: 0 38px 9px 0; }
+    .badge { padding: 4px 8px; border-radius: 5px; background: var(--gold-soft); color: #725900; font-size: 9px; font-weight: 750; }
+    .badge.status-done { background: #fff0ed; color: #a33e35; }
+    .badge.status-active { background: #e8f5ec; color: #176b3a; }
+    .card h3 { margin: 0; font-size: 14px; }
+    .card p { margin: 6px 0 10px; color: #737f78; font-size: 11px; line-height: 1.6; }
+    .notification-photo-link { display: inline-block; margin-top: 11px; }
+    .notification-photo { display: block; width: min(100%, 320px); max-height: 240px; border: 1px solid var(--line); border-radius: 8px; object-fit: contain; object-position: left center; background: #fff; }
+    .meta { display: flex; flex-wrap: wrap; gap: 8px 15px; color: #7b867f; font-size: 10px; }
+    .empty { padding: 48px 18px; border: 1px dashed #dce4de; border-radius: 10px; background: rgba(255,255,255,.94); box-shadow: 0 7px 24px rgba(20,38,30,.1); text-align: center; }
+    .empty h3 { margin: 0 0 5px; font-size: 13px; }
+    .empty p { margin: 0; color: var(--muted); font-size: 11px; }
+    .dashboard-nav { display: flex; flex-wrap: wrap; gap: 9px; margin: 0 0 21px; }
+    .dashboard-nav[hidden] { display: none; }
+    .dashboard-nav a {
+      padding: 9px 13px; border: 1px solid #e5c84c; border-radius: 8px;
+      background: rgba(255,255,255,.94); color: #725900; font-size: 11px; font-weight: 700;
+      text-decoration: none;
+    }
+    .dashboard-section { margin-bottom: 22px; scroll-margin-top: 18px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .summary-card {
+      padding: 17px; border: 1px solid rgba(255,255,255,.85); border-radius: 10px;
+      background: rgba(255,255,255,.94); box-shadow: 0 7px 24px rgba(20,38,30,.08);
+    }
+    .summary-card span { display: block; color: var(--muted); font-size: 11px; }
+    .summary-card strong { display: block; margin-top: 7px; font-size: 25px; }
+    .manager-form {
+      padding: 18px; border: 1px solid rgba(255,255,255,.85); border-radius: 10px;
+      background: rgba(255,255,255,.94); box-shadow: 0 7px 24px rgba(20,38,30,.08);
+    }
+    .manager-form .field { margin-top: 0; }
+    .manager-form .form-body { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+    .manager-form .field.full { grid-column: 1 / -1; }
+    .manager-form label { color: #44534a; font-size: 10px; font-weight: 700; }
+    .manager-form input, .manager-form select, .manager-form textarea {
+      width: 100%; min-height: 39px; padding: 9px 10px; border: 1px solid var(--line);
+      border-radius: 7px; outline: none; background: #fff; color: var(--ink); font: inherit; font-size: 12px;
+    }
+    .manager-form textarea { min-height: 82px; resize: vertical; line-height: 1.5; }
+    .manager-form input[type="file"] { padding: 7px; }
+    .manager-form input:focus, .manager-form select:focus, .manager-form textarea:focus {
+      border-color: #d6aa00; box-shadow: 0 0 0 3px rgba(214,170,0,.16);
+    }
+    .manager-form .form-actions { display: flex; justify-content: flex-end; margin-top: 14px; }
+    .form-message { margin: 11px 0 0; color: #176b3a; font-size: 11px; }
+    .form-message.error { color: #a33e35; }
+    .list-tools { display: flex; flex-wrap: wrap; gap: 9px; margin: 0 0 12px; }
+    .search-input {
+      flex: 1 1 220px; min-width: 0; min-height: 38px; padding: 0 11px;
+      border: 1px solid var(--line); border-radius: 8px; background: #fff; font: inherit; font-size: 11px;
+    }
+    .calendar-date { min-width: 145px; padding: 0 9px; }
+    .manager-filter { min-width: 125px; }
+    .history-tools {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      margin: 0 0 12px; padding: 10px 12px; border: 1px solid var(--line);
+      border-radius: 8px; background: rgba(255,255,255,.94); color: #53625a; font-size: 11px;
+    }
+    .history-tools[hidden] { display: none; }
+    .history-day { display: grid; gap: 8px; }
+    .history-day + .history-day { margin-top: 8px; }
+    .history-day-heading {
+      display: flex; align-items: center; gap: 9px; padding: 9px 12px;
+      border: 1px solid rgba(255,255,255,.85); border-radius: 8px;
+      background: rgba(255,255,255,.82); color: #53625a; font-size: 11px;
+    }
+    .history-day-heading strong { flex: 1; color: var(--ink); }
+    .history-select { display: inline-flex; align-items: center; gap: 7px; color: #53625a; font-size: 10px; }
+    .history-select input { width: 16px; height: 16px; accent-color: #176b3a; }
+    .history-day-heading input { margin: 0; }
+    .card-history-select { position: absolute; top: 15px; right: 48px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    .history-tools .action-button { flex: 0 0 auto; }
+    .card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 13px; }
+    .action-button {
+      min-height: 32px; padding: 0 10px; border: 1px solid #e5c84c; border-radius: 7px;
+      background: var(--gold-soft); color: #725900; font-size: 10px; font-weight: 700;
+    }
+    .action-button.delete { border-color: #e9c5c0; background: #fff0ed; color: #a33e35; }
+    .action-button:disabled { opacity: .65; cursor: wait; }
+    .login-screen {
+      position: relative; min-height: 100vh; display: grid; place-items: center; padding: 20px;
+      background: radial-gradient(ellipse at 50% 12%, #fff3bd 0, var(--canvas) 56%);
+    }
+    .login-screen[hidden], .app-shell[hidden] { display: none; }
+    .login-card { width: min(100%, 380px); padding: 27px; border: 1px solid var(--line); border-radius: 14px; background: #fff; box-shadow: 0 10px 34px #1d31200e; }
+    .login-card h1 { margin-top: 23px; font-size: 23px; text-align: center; }
+    .login-card > p { margin: 0 0 20px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .field { display: grid; gap: 6px; margin-top: 13px; }
+    .field label { color: #44534a; font-size: 10px; font-weight: 700; }
+    .field input, .field select { width: 100%; height: 39px; padding: 0 10px; border: 1px solid var(--line); border-radius: 7px; outline: none; background: white; font-size: 12px; }
+    .field input:focus, .field select:focus { border-color: #d6aa00; box-shadow: 0 0 0 3px rgba(214,170,0,.16); }
+    .submit {
+      width: 100%; min-height: 40px; margin-top: 16px; border: 0; border-radius: 8px;
+      background: var(--gold); color: #302600; font-size: 11px; font-weight: 700;
+    }
+    .submit:hover { background: var(--gold-dark); }
+    .submit:disabled { opacity: .7; }
+    .error { margin: 12px 0 0 !important; color: #b44c43 !important; font-size: 11px !important; }
+    .error[hidden] { display: none; }
+    h1, h2, h3, strong, b, .field label, .manager-form label, .logout-button,
+    .bell-button, .dashboard-nav a, .count, .badge:not(.status-active):not(.status-done),
+    .action-button:not(.delete), .submit {
+      color: var(--mandiri-blue);
+    }
+    @media (max-width: 580px) {
+      .topbar { min-height: 62px; height: auto; padding: 8px 5%; gap: 8px; }
+      .topbar .brand-caption { display: none; }
+      .topbar .mandiri-logo { width: 66px; height: 38px; }
+      .topbar .danantara-logo { width: 66px; height: 19px; }
+      .topbar-actions { min-width: 0; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+      .topbar-actions { margin-right: 82px; }
+      .topbar-danantara { right: 5%; }
+      main { padding-top: 28px; }
+      .heading { align-items: flex-start; }
+      .heading > div:first-child { padding: 14px; }
+      .bell-button { padding: 0 9px; font-size: 10px; }
+      .filter { min-width: 110px; }
+      .summary-grid { gap: 8px; }
+      .summary-card { padding: 13px; }
+      .summary-card strong { font-size: 21px; }
+      .manager-form .form-body { grid-template-columns: 1fr; }
+      .manager-form .field.full { grid-column: auto; }
+      .search-input { flex-basis: 100%; }
+      .list-tools .filter { flex: 1 1 140px; }
+      .manager-form input, .manager-form select, .manager-form textarea,
+      .search-input, .filter { min-height: 44px; font-size: 16px; }
+      .action-button { min-height: 40px; }
+    }
+    @media (max-width: 420px) {
+      .topbar { padding: 8px 4%; }
+      .topbar .mandiri-logo { width: 58px; height: 34px; }
+      .topbar .danantara-logo { width: 58px; height: 17px; }
+      .topbar-actions { max-width: calc(100% - 132px); margin-right: 70px; gap: 6px; }
+      .permission-status { flex-basis: 100%; text-align: right; line-height: 1.2; }
+      .bell-button, .logout-button { min-height: 36px; }
+      main { width: 92%; padding: 22px 0 36px; }
+      .heading { flex-direction: column; align-items: stretch; gap: 10px; }
+      .heading > div:first-child { width: fit-content; }
+      .heading .filter { width: 100%; }
+      .section-head { flex-wrap: wrap; gap: 8px; }
+      .summary-grid { gap: 6px; }
+      .summary-card { min-width: 0; padding: 10px 8px; }
+      .summary-card span { font-size: 10px; }
+      .summary-card strong { font-size: 20px; }
+      .manager-form { padding: 13px; }
+      .card { padding: 14px; }
+      .card-actions { gap: 6px; }
+      .action-button { flex: 1 1 auto; }
+    }
+    @media (max-width: 340px) {
+      .topbar .mandiri-logo { width: 52px; height: 30px; }
+      .topbar .danantara-logo { width: 52px; height: 15px; }
+      .topbar-actions { max-width: calc(100% - 120px); margin-right: 62px; }
+      .summary-grid { grid-template-columns: 1fr; }
+      .summary-card { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+      .summary-card strong { margin-top: 0; }
+      .dashboard-nav { gap: 6px; }
+      .dashboard-nav a { flex: 1 1 100%; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell" id="app-shell" hidden>
+    <header class="topbar">
+      <div class="brand">
+        <img class="mandiri-logo" src="/assets/logo-mandiri-taspen.png" alt="Logo Mandiri Taspen">
+        <span class="brand-caption">Notifikasi pegawai</span>
+      </div>
+      <img class="danantara-logo topbar-danantara" src="/assets/logo-danantara-v2.svg" alt="Logo Danantara Indonesia">
+      <div class="topbar-actions">
+        <span class="permission-status" id="permission-status" role="status">Menyiapkan pemberitahuan...</span>
+        <button class="bell-button" id="bell-button" type="button" hidden>Izinkan pemberitahuan</button>
+        <button class="logout-button" id="logout-button" type="button">Keluar</button>
+      </div>
+    </header>
+    <div class="notice-box warning" id="logout-error" role="alert" hidden></div>
+    <main>
+      <nav class="dashboard-nav" id="manager-nav" aria-label="Menu dashboard KCP" hidden>
+        <a href="#dashboard-overview">Ringkasan</a>
+        <a href="#notification-input">Input notifikasi</a>
+        <a href="#notification-list-section">Daftar notifikasi</a>
+      </nav>
+      <section class="dashboard-section" id="dashboard-overview" aria-label="Ringkasan notifikasi" hidden>
+        <div class="summary-grid">
+          <div class="summary-card"><span>Total notifikasi</span><strong id="summary-total">0</strong></div>
+          <div class="summary-card"><span>Aktif</span><strong id="summary-active">0</strong></div>
+          <div class="summary-card"><span>Selesai</span><strong id="summary-done">0</strong></div>
+        </div>
+      </section>
+      <section class="dashboard-section" id="notification-input" aria-labelledby="input-title" hidden>
+        <div class="section-head"><h2 id="input-title">Input notifikasi</h2></div>
+        <form class="manager-form" id="manager-notification-form">
+          <div class="form-body">
+            <div class="field">
+              <label for="manager-customer-name">Nama nasabah</label>
+              <input id="manager-customer-name" name="customerName" maxlength="200" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="manager-department">Tujuan</label>
+              <select id="manager-department" name="department" required>
+                <option value="">Pilih jabatan</option>
+                <option>KCP</option><option>ROP/BM</option><option>CS</option><option>TELLER</option>
+                <option>AOP 1</option><option>AOP 2</option><option>PCO</option><option>COP</option>
+              </select>
+            </div>
+            <div class="field full">
+              <label for="manager-description">Keterangan</label>
+              <textarea id="manager-description" name="description" maxlength="200" required></textarea>
+            </div>
+            <div class="field full">
+              <label for="manager-notification-photo">Foto <span>(opsional, JPG/PNG/WebP, maksimal 5 MB)</span></label>
+              <input id="manager-notification-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp">
+            </div>
+          </div>
+          <div class="form-actions"><button class="submit" type="submit">Kirim Notifikasi</button></div>
+          <p class="form-message" id="manager-form-message" role="status" hidden></p>
+        </form>
+      </section>
+      <section class="heading">
+        <div><h1 id="welcome-title">Nama Pegawai</h1></div>
+        <select class="filter" id="status-filter" aria-label="Filter status">
+          <option value="all">Semua status</option>
+          <option value="active">Perlu ditindaklanjuti</option>
+          <option value="done">Selesai</option>
+        </select>
+      </section>
+      <div class="notice-box warning" id="desktop-warning" hidden></div>
+      <section id="notification-list-section" class="dashboard-section">
+        <div class="section-head"><h2>Notifikasi nasabah</h2><span class="count" id="count">0 notifikasi</span></div>
+        <div class="list-tools">
+          <input class="search-input" id="notification-search" type="search" placeholder="Cari nasabah, keterangan, atau unit" aria-label="Cari notifikasi">
+          <input class="filter calendar-date" id="date-filter" type="date" aria-label="Pilih tanggal arsip">
+          <select class="filter manager-filter" id="department-filter" aria-label="Filter unit" hidden>
+            <option value="all">Semua unit</option>
+            <option>KCP</option><option>ROP/BM</option><option>CS</option><option>TELLER</option>
+            <option>AOP 1</option><option>AOP 2</option><option>PCO</option><option>COP</option>
+          </select>
+        </div>
+        <div class="history-tools" id="history-tools" hidden>
+          <span id="history-selection-count" role="status">0 riwayat dipilih</span>
+          <button class="action-button delete" id="delete-selected-history" type="button" disabled>Hapus pilihan</button>
+        </div>
+        <div class="list" id="notification-list" aria-live="polite"></div>
+      </section>
+    </main>
+  </div>
+  <script>
+    (() => {
+      const appShell = document.getElementById("app-shell");
+      const statusFilter = document.getElementById("status-filter");
+      const dateFilter = document.getElementById("date-filter");
+      const departmentFilter = document.getElementById("department-filter");
+      const searchInput = document.getElementById("notification-search");
+      const list = document.getElementById("notification-list");
+      const historyTools = document.getElementById("history-tools");
+      const historySelectionCount = document.getElementById("history-selection-count");
+      const deleteSelectedHistoryButton = document.getElementById("delete-selected-history");
+      const bellButton = document.getElementById("bell-button");
+      const permissionStatus = document.getElementById("permission-status");
+      const desktopWarning = document.getElementById("desktop-warning");
+      const logoutButton = document.getElementById("logout-button");
+      const logoutError = document.getElementById("logout-error");
+      const managerForm = document.getElementById("manager-notification-form");
+      const managerFormMessage = document.getElementById("manager-form-message");
+      const maxPhotoSize = 5 * 1024 * 1024;
+      const managerCustomerNameInput = document.getElementById("manager-customer-name");
+      const disallowedNameCharacters = /[^\p{L}\p{M} ]/gu;
+      const allowedNameCharacters = /^[\p{L}\p{M} ]*$/u;
+      let employeeName = "";
+      let employeeDepartment = "";
+      let isManager = false;
+      let notifications = [];
+      const selectedHistoryIds = new Set();
+      let liveEvents;
+
+      function readPhotoDataUrl(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.addEventListener("load", () => {
+            if (typeof reader.result !== "string") {
+              reject(new Error("Foto gagal dibaca."));
+              return;
+            }
+            resolve(reader.result);
+          }, { once: true });
+          reader.addEventListener("error", () => {
+            reject(reader.error || new Error("Foto gagal dibaca."));
+          }, { once: true });
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function filterCustomerNameInput(event) {
+        if (event.isComposing) return;
+        const input = event.currentTarget;
+        const caret = input.selectionStart;
+        const filtered = input.value.replace(disallowedNameCharacters, "");
+        if (filtered !== input.value) {
+          const filteredCaret = input.value.slice(0, caret).replace(disallowedNameCharacters, "").length;
+          input.value = filtered;
+          input.setSelectionRange(filteredCaret, filteredCaret);
+        }
+      }
+
+      managerCustomerNameInput.addEventListener("beforeinput", event => {
+        if (event.data && !allowedNameCharacters.test(event.data)) event.preventDefault();
+      });
+      managerCustomerNameInput.addEventListener("input", filterCustomerNameInput);
+      managerCustomerNameInput.addEventListener("compositionend", filterCustomerNameInput);
+      managerCustomerNameInput.addEventListener("paste", event => {
+        event.preventDefault();
+        const input = event.currentTarget;
+        const pastedText = event.clipboardData.getData("text").replace(disallowedNameCharacters, "");
+        input.setRangeText(pastedText, input.selectionStart, input.selectionEnd, "end");
+      });
+
+      function escapeHtml(value) {
+        return String(value).replace(/[&<>"']/g, character => ({
+          "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+        })[character]);
+      }
+
+      function formatDate(value) {
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "Waktu tidak diketahui";
+        return new Intl.DateTimeFormat("id-ID", {
+          day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23"
+        }).format(date);
+      }
+
+      async function apiRequest(path, options = {}) {
+        const hasBody = options.body !== undefined;
+        const requestOptions = {
+          ...options,
+          headers: {
+            ...(hasBody ? { "Content-Type": "application/json" } : {}),
+            ...(options.headers || {})
+          }
+        };
+
+        let response;
+        try {
+          response = await fetch(path, requestOptions);
+        } catch {
+          throw new Error("Server tidak terhubung. Periksa apakah server aplikasi aktif dan alamat yang dibuka benar.");
+        }
+
+        const rawText = await response.text();
+        if (!rawText) {
+          if (!response.ok) throw new Error("Permintaan gagal diproses.");
+          return null;
+        }
+
+        let result;
+        try {
+          result = JSON.parse(rawText);
+        } catch {
+          if (rawText.trim().startsWith("<")) {
+            throw new Error("Server mengembalikan halaman HTML, bukan data API. Pastikan aplikasi dibuka melalui alamat server yang benar.");
+          }
+          throw new Error("Respons server bukan JSON yang valid.");
+        }
+        if (!response.ok) throw new Error(result && result.error ? result.error : "Permintaan gagal diproses.");
+        return result;
+      }
+
+      function notificationDay(item) {
+        const date = new Date(item.createdAt);
+        if (Number.isNaN(date.getTime())) return "unknown";
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      }
+
+      function formatNotificationDay(day) {
+        if (day === "unknown") return "Tanggal tidak diketahui";
+        return new Intl.DateTimeFormat("id-ID", {
+          weekday: "long", day: "numeric", month: "long", year: "numeric"
+        }).format(new Date(`${day}T12:00:00`));
+      }
+
+      function updateSummary(items) {
+        document.getElementById("summary-total").textContent = String(items.length);
+        document.getElementById("summary-active").textContent = String(
+          items.filter(item => item.status === "active").length
+        );
+        document.getElementById("summary-done").textContent = String(
+          items.filter(item => item.status === "done").length
+        );
+      }
+
+      function render() {
+        const dateNotifications = notifications.filter(item =>
+          !dateFilter.value || notificationDay(item) === dateFilter.value
+        );
+        updateSummary(dateNotifications);
+        const searchTerm = searchInput.value.trim().toLocaleLowerCase("id-ID");
+        const visible = dateNotifications
+          .filter(item => statusFilter.value === "all" || item.status === statusFilter.value)
+          .filter(item => !isManager || departmentFilter.value === "all" || item.department === departmentFilter.value)
+          .filter(item => {
+            if (!searchTerm) return true;
+            return [item.department, item.customerName, item.description]
+              .some(value => String(value || "").toLocaleLowerCase("id-ID").includes(searchTerm));
+          })
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        const completedIds = new Set(
+          notifications.filter(item => item.status === "done").map(item => item.id)
+        );
+        for (const itemId of selectedHistoryIds) {
+          if (!completedIds.has(itemId)) selectedHistoryIds.delete(itemId);
+        }
+        historyTools.hidden = selectedHistoryIds.size === 0;
+        historySelectionCount.textContent = `${selectedHistoryIds.size} riwayat dipilih`;
+        deleteSelectedHistoryButton.disabled = selectedHistoryIds.size === 0;
+        document.getElementById("count").textContent = `${visible.length} notifikasi`;
+        if (!visible.length) {
+          list.innerHTML = `<div class="empty"><h3>${searchTerm || statusFilter.value !== "all" || (isManager && departmentFilter.value !== "all") ? "Tidak ada notifikasi yang cocok" : "Belum ada notifikasi"}</h3><p>${isManager ? "Notifikasi dari seluruh unit akan tampil di sini." : `Notifikasi baru untuk unit ${escapeHtml(employeeDepartment)} akan muncul di sini.`}</p></div>`;
+          return;
+        }
+        const groupedNotifications = new Map();
+        for (const item of visible) {
+          const day = notificationDay(item);
+          if (!groupedNotifications.has(day)) groupedNotifications.set(day, []);
+          groupedNotifications.get(day).push(item);
+        }
+        list.innerHTML = [...groupedNotifications.entries()].map(([day, dayItems]) => {
+          const completedItems = dayItems.filter(item => item.status === "done");
+          const selectedCount = completedItems.filter(item => selectedHistoryIds.has(item.id)).length;
+          const dayLabel = formatNotificationDay(day);
+          return `<section class="history-day" aria-label="${escapeHtml(dayLabel)}">
+          <div class="history-day-heading">
+            ${completedItems.length ? `<label class="history-select"><input type="checkbox" data-action="select-day" data-day="${escapeHtml(day)}" aria-label="Pilih semua riwayat tanggal ${escapeHtml(dayLabel)}" ${selectedCount === completedItems.length ? "checked" : ""}>Pilih semua</label>` : ""}
+            <strong>${escapeHtml(dayLabel)}</strong>
+            ${completedItems.length ? `<span>${completedItems.length} riwayat</span>` : ""}
+          </div>
+          ${dayItems.map(item => `<article class="card">
+          ${item.status === "done" ? `<span class="card-completion" role="img" aria-label="Pertemuan selesai" title="Pertemuan selesai"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8.2 3.2 3.1L13 4.8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></svg></span>` : ""}
+          ${item.status === "done" ? `<label class="history-select card-history-select"><input type="checkbox" data-action="select-item" data-id="${escapeHtml(item.id)}" aria-label="Pilih riwayat ${escapeHtml(item.customerName || item.description)}" ${selectedHistoryIds.has(item.id) ? "checked" : ""}><span class="sr-only">Pilih riwayat</span></label>` : ""}
+          <div class="badges">
+            <span class="badge">${escapeHtml(item.department)}</span>
+            <span class="badge ${item.status === "active" ? "status-active" : "status-done"}">${item.status === "active" ? "Perlu ditindaklanjuti" : "Selesai"}</span>
+          </div>
+          <h3>${escapeHtml(item.purpose || `Notifikasi unit ${item.department}`)}</h3>
+          <p>${escapeHtml(item.description)}</p>
+          ${item.photo ? `<a class="notification-photo-link" href="/api/notifications/${encodeURIComponent(item.id)}/photo" target="_blank" rel="noopener noreferrer"><img class="notification-photo" src="/api/notifications/${encodeURIComponent(item.id)}/photo" alt="Foto lampiran notifikasi" loading="lazy"></a>` : ""}
+          <div class="meta">
+            ${item.customerName ? `<span>Nasabah: <strong>${escapeHtml(item.customerName)}</strong></span>` : ""}
+            <span>Dicatat: ${escapeHtml(formatDate(item.createdAt))}</span>
+          </div>
+          ${isManager || item.status === "active" || item.status === "done" ? `<div class="card-actions">
+            ${isManager || item.status === "active" ? `<button class="action-button" type="button" data-action="status" data-id="${escapeHtml(item.id)}" data-status="${item.status === "active" ? "done" : "active"}">${item.status === "active" ? "Tandai selesai" : "Aktifkan kembali"}</button>` : ""}
+            ${isManager || item.status === "done" ? `<button class="action-button delete" type="button" data-action="delete" data-id="${escapeHtml(item.id)}">${item.status === "done" && !isManager ? "Hapus riwayat" : "Hapus"}</button>` : ""}
+          </div>` : ""}
+        </article>`).join("")}
+        </section>`;
+        }).join("");
+      }
+
+      async function showDesktopNotification(item) {
+        if (!("Notification" in window) || Notification.permission !== "granted") return;
+        const notice = new Notification(item.purpose || `Notifikasi baru untuk unit ${item.department}`, {
+          body: `${item.department} · ${item.customerName || "Nasabah"}\n${item.description}`,
+          tag: item.id
+        });
+        notice.onclick = () => {
+          window.focus();
+          notice.close();
+        };
+      }
+
+      function updateDesktopNotificationStatus(permission) {
+        bellButton.hidden = true;
+        desktopWarning.hidden = true;
+        if (!window.isSecureContext || !("Notification" in window)) {
+          permissionStatus.textContent = "Notifikasi desktop memerlukan HTTPS.";
+          desktopWarning.textContent = "Browser hanya mengizinkan pemberitahuan desktop pada koneksi aman (HTTPS). Halaman ini tetap menerima notifikasi langsung selama terbuka. Minta tim IT mengaktifkan HTTPS agar pemberitahuan desktop dapat digunakan.";
+          desktopWarning.hidden = false;
+          return;
+        }
+        if (permission === "granted") {
+          permissionStatus.textContent = "Pemberitahuan desktop aktif";
+        } else if (permission === "denied") {
+          permissionStatus.textContent = "Izin pemberitahuan diblokir browser";
+          desktopWarning.textContent = "Izin pemberitahuan diblokir. Ubah izin notifikasi situs ini melalui pengaturan browser agar pemberitahuan desktop dapat aktif.";
+          desktopWarning.hidden = false;
+        } else {
+          permissionStatus.textContent = "Izin pemberitahuan belum diberikan";
+          bellButton.textContent = "Izinkan pemberitahuan";
+          bellButton.hidden = false;
+        }
+      }
+
+      async function activateDesktopNotifications() {
+        if (!window.isSecureContext || !("Notification" in window)) {
+          updateDesktopNotificationStatus("unsupported");
+          return;
+        }
+        if (Notification.permission !== "default") {
+          updateDesktopNotificationStatus(Notification.permission);
+          return;
+        }
+        try {
+          const permission = await Notification.requestPermission();
+          updateDesktopNotificationStatus(permission);
+        } catch (error) {
+          console.error("Permintaan izin pemberitahuan gagal:", error);
+          updateDesktopNotificationStatus(Notification.permission);
+        }
+      }
+
+      
+async function enterApplication(session) {
+  employeeName = session.employeeName || "";
+  employeeDepartment = session.department || "";
+  isManager = session.role === "manager";
+
+  // Tutup koneksi sebelumnya jika ada.
+  if (liveEvents) {
+    liveEvents.close();
+    liveEvents = null;
+  }
+
+  document.getElementById("welcome-title").textContent = isManager
+    ? "Dashboard KCP"
+    : `${employeeName} · ${employeeDepartment}`;
+
+  document.getElementById("manager-nav").hidden = !isManager;
+  document.getElementById("dashboard-overview").hidden = !isManager;
+  document.getElementById("notification-input").hidden = !isManager;
+  departmentFilter.hidden = !isManager;
+
+  document.getElementById("input-title").textContent = isManager
+    ? "Input notifikasi semua unit"
+    : "Input notifikasi";
+
+  // Ambil data awal dari server sebelum menampilkan dashboard.
+  const initialData = await apiRequest("/api/notifications");
+
+  if (!Array.isArray(initialData)) {
+    throw new Error("Data notifikasi dari server tidak valid.");
+  }
+
+  notifications = initialData;
+  render();
+  appShell.hidden = false;
+
+  void activateDesktopNotifications();
+
+  // Hubungkan dashboard ke pembaruan real-time.
+  const events = new EventSource("/api/events");
+  liveEvents = events;
+
+  let initialSnapshotReceived = false;
+
+  events.onopen = () => {
+    console.info("Koneksi notifikasi real-time aktif.");
+  };
+
+  events.onmessage = event => {
+    try {
+      const updated = JSON.parse(event.data);
+
+      if (!Array.isArray(updated)) {
+        throw new Error("Format data notifikasi tidak valid.");
+      }
+
+      // Hindari notifikasi desktop berulang dari data awal.
+      if (initialSnapshotReceived) {
+        const existingIds = new Set(
+          notifications.map(item => String(item.id))
+        );
+
+        updated
+          .filter(item => !existingIds.has(String(item.id)))
+          .forEach(item => {
+            void showDesktopNotification(item);
+          });
+      }
+
+      notifications = updated;
+      initialSnapshotReceived = true;
+      render();
+    } catch (error) {
+      console.error(
+        "Pembaruan notifikasi gagal dibaca:",
+        error
+      );
+    }
+  };
+
+  events.onerror = () => {
+    // EventSource mencoba menyambungkan ulang secara otomatis.
+    console.warn(
+      "Koneksi real-time terputus. Browser mencoba menyambungkan kembali."
+    );
+  };
+}
+
+
+      bellButton.addEventListener("click", async () => {
+        bellButton.disabled = true;
+        try {
+          const permission = await Notification.requestPermission();
+          updateDesktopNotificationStatus(permission);
+        } catch (error) {
+          console.error("Permintaan izin pemberitahuan gagal:", error);
+          updateDesktopNotificationStatus(Notification.permission);
+        } finally {
+          bellButton.disabled = false;
+        }
+      });
+
+      logoutButton.addEventListener("click", async () => {
+        logoutButton.disabled = true;
+        logoutError.hidden = true;
+        try {
+          await apiRequest("/api/logout", { method: "POST" });
+          if (liveEvents) {
+            liveEvents.close();
+            liveEvents = null;
+          }
+          notifications = [];
+          selectedHistoryIds.clear();
+          dateFilter.value = "";
+          employeeName = "";
+          employeeDepartment = "";
+          appShell.hidden = true;
+          window.location.replace("/");
+        } catch (error) {
+          logoutError.textContent = `Gagal keluar: ${error.message}`;
+          logoutError.hidden = false;
+        } finally {
+          logoutButton.disabled = false;
+        }
+      });
+
+      statusFilter.addEventListener("change", render);
+      dateFilter.addEventListener("change", render);
+      departmentFilter.addEventListener("change", render);
+      searchInput.addEventListener("input", render);
+
+      list.addEventListener("change", event => {
+        const checkbox = event.target.closest('input[type="checkbox"][data-action]');
+        if (!checkbox) return;
+        if (checkbox.dataset.action === "select-item") {
+          if (checkbox.checked) selectedHistoryIds.add(checkbox.dataset.id);
+          else selectedHistoryIds.delete(checkbox.dataset.id);
+        } else if (checkbox.dataset.action === "select-day") {
+          const visibleDayItems = notifications.filter(item =>
+            item.status === "done" &&
+            notificationDay(item) === checkbox.dataset.day &&
+            (!dateFilter.value || notificationDay(item) === dateFilter.value) &&
+            (statusFilter.value === "all" || item.status === statusFilter.value) &&
+            (isManager ? departmentFilter.value === "all" || item.department === departmentFilter.value : item.department === employeeDepartment) &&
+            (!searchInput.value.trim() || [item.department, item.customerName, item.description]
+              .some(value => String(value || "").toLocaleLowerCase("id-ID")
+                .includes(searchInput.value.trim().toLocaleLowerCase("id-ID"))))
+          );
+          for (const item of visibleDayItems) {
+            if (checkbox.checked) selectedHistoryIds.add(item.id);
+            else selectedHistoryIds.delete(item.id);
+          }
+        }
+        render();
+      });
+
+      deleteSelectedHistoryButton.addEventListener("click", async () => {
+        const selectedIds = [...selectedHistoryIds];
+        if (!selectedIds.length) return;
+        if (!window.confirm(`Hapus ${selectedIds.length} riwayat notifikasi yang dipilih?`)) return;
+        deleteSelectedHistoryButton.disabled = true;
+        try {
+          const result = await apiRequest("/api/notifications/bulk-delete", {
+            method: "POST",
+            body: JSON.stringify({ ids: selectedIds })
+          });
+          const deletedIds = new Set(result.deletedIds);
+          notifications = notifications.filter(item => !deletedIds.has(item.id));
+          for (const itemId of deletedIds) selectedHistoryIds.delete(itemId);
+          render();
+        } catch (error) {
+          window.alert(`Penghapusan riwayat gagal: ${error.message}`);
+          deleteSelectedHistoryButton.disabled = false;
+        }
+      });
+
+      managerForm.addEventListener("submit", async event => {
+        event.preventDefault();
+        if (!isManager || !managerForm.reportValidity()) return;
+        managerFormMessage.hidden = true;
+        const fields = new FormData(managerForm);
+        const photoFile = fields.get("photo");
+        if (photoFile instanceof File && photoFile.size > maxPhotoSize) {
+          managerFormMessage.textContent = "Ukuran foto maksimal 5 MB.";
+          managerFormMessage.classList.add("error");
+          managerFormMessage.hidden = false;
+          return;
+        }
+        const submitButton = managerForm.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        try {
+          const notification = {
+            customerName: String(fields.get("customerName") || "").trim(),
+            department: String(fields.get("department") || ""),
+            description: String(fields.get("description") || "").trim(),
+          };
+          if (photoFile instanceof File && photoFile.size > 0) {
+            notification.photo = await readPhotoDataUrl(photoFile);
+          }
+          const item = await apiRequest("/api/notifications", {
+            method: "POST",
+            body: JSON.stringify(notification)
+          });
+          notifications.unshift(item);
+          managerForm.reset();
+          managerFormMessage.textContent = `Notifikasi untuk ${item.department} berhasil dikirim.`;
+          managerFormMessage.classList.remove("error");
+          managerFormMessage.hidden = false;
+          render();
+        } catch (error) {
+          managerFormMessage.textContent = `Notifikasi gagal disimpan: ${error.message}`;
+          managerFormMessage.classList.add("error");
+          managerFormMessage.hidden = false;
+        } finally {
+          submitButton.disabled = false;
+        }
+      });
+
+      list.addEventListener("click", async event => {
+        const button = event.target.closest("button[data-action]");
+        if (!button) return;
+        const itemId = button.dataset.id;
+        const itemIndex = notifications.findIndex(item => item.id === itemId);
+        if (itemIndex < 0) return;
+        const action = button.dataset.action;
+        if (
+          !isManager &&
+          action !== "status" &&
+          !(action === "delete" && notifications[itemIndex].status === "done")
+        ) return;
+        if (
+          action === "delete" &&
+          !window.confirm(
+            notifications[itemIndex].status === "done"
+              ? "Hapus riwayat notifikasi ini?"
+              : "Hapus notifikasi ini?"
+          )
+        ) return;
+        button.disabled = true;
+        try {
+          if (action === "status") {
+            const item = await apiRequest(`/api/notifications/${encodeURIComponent(itemId)}`, {
+              method: "PATCH",
+              body: JSON.stringify({ status: button.dataset.status })
+            });
+            notifications[itemIndex] = item;
+          } else if (action === "delete") {
+            await apiRequest(`/api/notifications/${encodeURIComponent(itemId)}`, { method: "DELETE" });
+            notifications.splice(itemIndex, 1);
+          }
+          render();
+        } catch (error) {
+          window.alert(`Perubahan notifikasi gagal: ${error.message}`);
+        }
+      });
+
+      
+apiRequest("/api/session")
+  .then(session => {
+    if (
+      session.authenticated &&
+      (
+        session.role === "receiver" ||
+        session.role === "manager"
+      )
+    ) {
+      return enterApplication(session);
+    }
+
+    window.location.replace("/");
+  })
+  .catch(error => {
+    console.error(
+      "Gagal memuat sesi atau dashboard:",
+      error
+    );
+
+    window.location.replace("/");
+  });
+
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f5f7f6">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Notifikasi nasabah">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/assets/mandiri-taspen-icon-180.png">
+  <title>Notifikasi nasabah</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #18241f;
+      --muted: #77827d;
+      --line: #e8ece9;
+      --canvas: #f5f7f6;
+      --surface: #fff;
+      --gold: #f2c200;
+      --gold-dark: #d6aa00;
+      --gold-soft: #fff6d5;
+      --amber: #a66b11;
+      --amber-soft: #fff4df;
+      --red: #b44c43;
+      --red-soft: #fff0ed;
+      --mandiri-blue: #003b71;
+      --shadow: 0 10px 34px rgba(29, 49, 40, .055);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--canvas);
+      color: var(--ink);
+      font-family: Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+      font-size: 14px;
+      -webkit-font-smoothing: antialiased;
+    }
+    body:has(#app-shell:not([hidden])) {
+      background-color: var(--canvas);
+      background-image: linear-gradient(rgba(247, 249, 248, .32), rgba(247, 249, 248, .44)), url("/assets/taspen-service-background.png");
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    .app-shell { min-height: 100vh; }
+    .topbar {
+      position: relative;
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 5.5%;
+      background: rgba(255,255,255,.94);
+      border-bottom: 1px solid var(--line);
+    }
+    .brand { display: flex; align-items: center; gap: 8px; }
+    .mandiri-logo { display: block; width: 76px; height: 44px; object-fit: contain; }
+    .danantara-logo { display: block; width: 76px; height: 22px; object-fit: contain; }
+    .topbar-danantara { position: absolute; top: 50%; right: 5.5%; transform: translateY(-50%); }
+    .brand-caption { display: block; color: var(--muted); font-size: 11px; }
+    .topbar-actions { display: flex; align-items: center; margin-right: 96px; }
+    .logout-button {
+      min-height: 36px; padding: 0 13px; border: 1px solid #e5c84c; border-radius: 8px;
+      background: var(--gold-soft); color: #725900; font-size: 11px; font-weight: 700;
+    }
+    .logout-button:hover { background: #ffed9b; }
+    .logout-button:disabled { opacity: .65; cursor: wait; }
+    main { width: min(1110px, 89%); margin: 0 auto; padding: 42px 0 60px; }
+    .eyebrow {
+      display: flex; align-items: center; gap: 7px;
+      color: #8a6a00; font-size: 10px; font-weight: 800;
+      letter-spacing: 1.15px; text-transform: uppercase;
+    }
+    h1 { margin: 10px 0 7px; font-size: clamp(26px, 3.5vw, 34px); letter-spacing: -1.25px; line-height: 1.15; }
+    .page-description { margin: 0; color: var(--muted); font-size: 13px; }
+    .connection-status { display: inline-flex; align-items: center; gap: 6px; margin-top: 9px; color: var(--muted); font-size: 10px; }
+    .connection-status::before { width: 7px; height: 7px; border-radius: 50%; background: #a66b11; content: ""; }
+    .connection-status.connected::before { background: var(--gold-dark); }
+    .connection-status.error::before { background: #b44c43; }
+    .primary-button {
+      min-height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+      padding: 0 16px; border: 0; border-radius: 9px;
+      color: #302600; background: var(--gold); font-size: 12px; font-weight: 700;
+      box-shadow: 0 4px 10px rgba(214,170,0,.2); transition: background .15s, transform .15s;
+    }
+    .primary-button:hover { background: var(--gold-dark); transform: translateY(-1px); }
+
+    .input-page { width: min(760px, 90%); margin: 0 auto; padding: 52px 0 64px; }
+    .input-heading {
+      margin-bottom: 19px; padding: 20px 22px; border: 1px solid rgba(255,255,255,.8);
+      border-radius: 12px; background: rgba(255,255,255,.92); box-shadow: 0 8px 28px rgba(20,38,30,.12);
+    }
+    .input-heading h1 { margin: 8px 0 5px; }
+    .input-card {
+      overflow: hidden; border: 1px solid rgba(255,255,255,.8); border-radius: 12px;
+      background: rgba(255,255,255,.96); box-shadow: 0 8px 28px rgba(20,38,30,.12);
+    }
+    .input-card .form-body { padding: 23px; }
+    .input-card .form-actions {
+      display: flex; align-items: center; justify-content: space-between; gap: 14px;
+      padding: 15px 23px; border-top: 1px solid var(--line);
+    }
+    .input-card .form-actions .connection-status { margin: 0; }
+    .input-card .primary-button { min-width: 170px; }
+
+    .form-body { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; padding: 20px 23px; }
+    .field { display: grid; gap: 6px; }
+    .field.full { grid-column: 1 / -1; }
+    .field label { color: #44534a; font-size: 10px; font-weight: 700; }
+    .field label span { color: #a0aaa3; font-weight: 500; }
+    .form-control { width: 100%; min-height: 39px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px; outline: none; background: white; color: var(--ink); font-size: 11px; }
+    input[type="file"].form-control { padding: 7px; }
+    textarea.form-control { min-height: 82px; resize: vertical; line-height: 1.5; }
+    .form-error { grid-column: 1 / -1; margin: 0; color: var(--red); font-size: 11px; }
+    .login-screen {
+      position: relative; min-height: 100vh; display: grid; place-items: center; padding: 22px;
+      background: #f3f3f1;
+    }
+    .login-screen[hidden] { display: none; }
+    .login-card {
+      width: min(100%, 560px); padding: 30px 32px 28px;
+      border: 1px solid rgba(201, 206, 203, 0.9); border-radius: 18px;
+      background: rgba(255,255,255,0.72); box-shadow: 0 16px 28px rgba(15, 27, 21, 0.04);
+    }
+    .login-brand { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 60px; }
+    .login-brand-primary { display: grid; justify-items: start; gap: 1px; }
+    .login-brand .mandiri-logo { width: 92px; height: 53px; }
+    .login-brand .danantara-logo { width: 90px; height: 26px; }
+    .login-brand .brand-caption { color: #4b5d5d; font-size: 12px; font-weight: 600; letter-spacing: -0.02em; }
+    .login-card h1 { margin: 26px 0 14px; font-size: 36px; line-height: 1.1; letter-spacing: -0.04em; }
+    .login-card p {
+      margin: 0 0 18px; color: #5b6a67; font-size: 14px; line-height: 1.6;
+      max-width: 42ch;
+    }
+    .login-card .field { margin-top: 4px; }
+    .login-card .field label {
+      display: block; margin-bottom: 8px; color: #4a574f; font-size: 13px; font-weight: 700;
+    }
+    .login-card .form-control {
+      min-height: 52px; padding: 12px 14px; border-radius: 9px; border: 1px solid #e4e7e5; background: #fff;
+      font-size: 15px; color: var(--ink);
+    }
+    .login-card .primary-button {
+      width: 100%; min-height: 52px; margin-top: 18px; border-radius: 10px; font-size: 18px; font-weight: 800;
+    }
+    .login-card .login-error { margin: 14px 0 0; font-size: 13px; }
+    .install-button {
+      min-height: 40px; width: 100%; margin-top: 10px; padding: 0 14px;
+      border: 1px solid #d5e1ed; border-radius: 8px; background: #f5f9fc;
+      color: var(--mandiri-blue); font: inherit; font-size: 12px; font-weight: 700;
+    }
+    .install-button:hover { background: #eaf2f8; }
+    .install-button[hidden] { display: none; }
+    .install-guidance { margin: 10px 0 0; color: var(--mandiri-blue); font-size: 12px; line-height: 1.5; }
+    .login-error { margin-top: 12px !important; color: var(--red) !important; }
+    .login-error[hidden] { display: none; }
+    h1, h2, h3, strong, b, .field label, .eyebrow, .logout-button, .primary-button {
+      color: var(--mandiri-blue);
+    }
+    @media (max-width: 680px) {
+      .topbar { height: 64px; padding: 0 5%; }
+      .topbar .brand-caption { display: none; }
+      .topbar .mandiri-logo { width: 66px; height: 38px; }
+      .topbar .danantara-logo { width: 66px; height: 19px; }
+      .topbar-danantara { right: 5%; }
+      .topbar-actions { margin-right: 86px; }
+      .topbar-actions .install-button { width: auto; min-height: 36px; margin: 0 8px 0 0; padding: 0 10px; font-size: 11px; }
+      .input-page { width: min(760px, 92%); padding: 28px 0 40px; }
+      .input-card .form-body { grid-template-columns: 1fr; gap: 12px; padding: 17px; }
+      .input-card .field.full { grid-column: auto; }
+      .input-card .form-actions { align-items: stretch; flex-direction: column; padding: 14px 17px 17px; }
+      .input-card .primary-button { width: 100%; }
+      .input-card .form-actions .connection-status { line-height: 1.4; }
+      .login-card { width: min(100%, 480px); padding: 22px 20px 20px; }
+      .login-brand { min-height: 0; }
+      .login-brand .mandiri-logo { width: 82px; height: 47px; }
+      .login-brand .danantara-logo { width: 78px; height: 23px; }
+      .login-card h1 { font-size: 32px; }
+      .login-card p { max-width: none; }
+      .login-card .form-control { min-height: 48px; }
+      .login-card .primary-button { min-height: 48px; font-size: 17px; }
+    }
+    @media (max-width: 420px) {
+      .login-screen { align-items: start; padding: 16px; }
+      .login-card { padding: 22px 19px; }
+      .topbar { min-height: 60px; height: auto; gap: 8px; }
+      .topbar .mandiri-logo { width: 58px; height: 34px; }
+      .topbar .danantara-logo { width: 58px; height: 17px; }
+      .topbar-actions { flex-shrink: 0; margin-right: 74px; }
+      .topbar-actions .install-button { margin-right: 5px; }
+      .logout-button { min-height: 38px; }
+      .input-heading { padding: 17px; }
+      .input-heading h1 { font-size: 27px; }
+      .input-card .form-body { padding: 15px; }
+      .input-card .form-actions { padding: 13px 15px 15px; }
+      .form-control { min-height: 44px; font-size: 16px; }
+      textarea.form-control { min-height: 100px; }
+      .login-card h1 { font-size: 30px; }
+      .login-brand .mandiri-logo { width: 78px; height: 45px; }
+      .login-brand .danantara-logo { width: 72px; height: 21px; }
+    }
+    @media (max-height: 520px) and (orientation: landscape) {
+      .login-screen { align-items: start; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="login-screen" id="login-screen" hidden>
+    <section class="login-card" aria-labelledby="login-title">
+      <div class="login-brand">
+        <div class="login-brand-primary">
+          <img class="mandiri-logo" src="/assets/logo-mandiri-taspen.png" alt="Logo Mandiri Taspen">
+          <span class="brand-caption">Portal akses pegawai</span>
+        </div>
+        <img class="danantara-logo" src="/assets/logo-danantara-v2.svg" alt="Logo Danantara Indonesia">
+      </div>
+      <h1 id="login-title">Masuk</h1>
+      <p>Masukkan kode akses. TAD dapat menginput notifikasi, kode KCP membuka dashboard lengkap, dan kode unit pegawai membuka notifikasi unitnya.</p>
+      <form id="login-form">
+        <div class="field">
+          <label for="access-code">Kode akses</label>
+          <input class="form-control" id="access-code" name="code" type="password" autocomplete="current-password" required>
+        </div>
+        <button class="primary-button" type="submit">Masuk</button>
+        <p class="login-error" id="login-error" role="alert" hidden></p>
+      </form>
+      <button class="install-button" type="button" data-install-app hidden>Pasang aplikasi</button>
+      <p class="install-guidance" data-install-guidance role="status" hidden></p>
+    </section>
+  </main>
+  <div class="app-shell" id="app-shell" hidden>
+    <header class="topbar">
+      <div class="brand">
+        <img class="mandiri-logo" src="/assets/logo-mandiri-taspen.png" alt="Logo Mandiri Taspen">
+        <span class="brand-caption">Input notifikasi nasabah</span>
+      </div>
+      <img class="danantara-logo topbar-danantara" src="/assets/logo-danantara-v2.svg" alt="Logo Danantara Indonesia">
+      <div class="topbar-actions">
+        <button class="install-button" type="button" data-install-app hidden>Pasang aplikasi</button>
+        <button class="logout-button" id="logout-button" type="button">Keluar</button>
+      </div>
+    </header>
+    <p class="form-error" id="logout-error" role="alert" hidden></p>
+
+    <main class="input-page">
+      <section class="input-heading" aria-labelledby="page-title">
+        <h1 id="page-title">Buat Notifikasi</h1>
+        <p class="page-description">Isi data singkat agar pegawai tujuan dapat segera membantu nasabah.</p>
+      </section>
+
+      <section class="input-card" aria-labelledby="page-title">
+        <form id="notification-form">
+          <div class="form-body">
+            <div class="field">
+              <label for="customer-name">Nama nasabah</label>
+              <input class="form-control" id="customer-name" name="customerName" placeholder="Contoh: Budi Santoso" autocomplete="off" maxlength="200">
+            </div>
+            <div class="field">
+              <label for="department">Tujuan</label>
+              <select class="form-control" id="department" name="department" required>
+                <option value="">Pilih jabatan</option>
+                <option>KCP</option>
+                <option>ROP/BM</option>
+                <option>CS</option>
+                <option>TELLER</option>
+                <option>AOP 1</option>
+                <option>AOP 2</option>
+                <option>PCO</option>
+                <option>COP</option>
+              </select>
+            </div>
+            <div class="field full">
+              <label for="description">Keterangan</label>
+              <textarea class="form-control" id="description" name="description" placeholder="Jelaskan kebutuhan nasabah atau tindak lanjut yang diperlukan..." required maxlength="200"></textarea>
+            </div>
+            <div class="field full">
+              <label for="notification-photo">Foto <span>(opsional, JPG/PNG/WebP, maksimal 5 MB)</span></label>
+              <input class="form-control" id="notification-photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp">
+            </div>
+            <p class="form-error" id="form-error" role="alert" hidden></p>
+          </div>
+          <div class="form-actions">
+            <span class="connection-status" id="connection-status" role="status">Terhubung ke server aplikasi</span>
+            <button class="primary-button" type="submit">Kirim Notifikasi</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+  <script src="/install.js" defer></script>
+  <script>
+    (() => {
+      const form = document.getElementById("notification-form");
+      const errorElement = document.getElementById("form-error");
+      const connectionStatus = document.getElementById("connection-status");
+      const loginScreen = document.getElementById("login-screen");
+      const loginForm = document.getElementById("login-form");
+      const loginError = document.getElementById("login-error");
+      const logoutButton = document.getElementById("logout-button");
+      const logoutError = document.getElementById("logout-error");
+      const customerNameInput = document.getElementById("customer-name");
+      const maxPhotoSize = 5 * 1024 * 1024;
+      const disallowedNameCharacters = /[^\p{L}\p{M} ]/gu;
+      const allowedNameCharacters = /^[\p{L}\p{M} ]*$/u;
+
+      function filterCustomerNameInput(event) {
+        if (event.isComposing) return;
+        const input = event.currentTarget;
+        const caret = input.selectionStart;
+        const filtered = input.value.replace(disallowedNameCharacters, "");
+        if (filtered !== input.value) {
+          const filteredCaret = input.value.slice(0, caret).replace(disallowedNameCharacters, "").length;
+          input.value = filtered;
+          input.setSelectionRange(filteredCaret, filteredCaret);
+        }
+      }
+
+      customerNameInput.addEventListener("beforeinput", event => {
+        if (event.data && !allowedNameCharacters.test(event.data)) event.preventDefault();
+      });
+      customerNameInput.addEventListener("input", filterCustomerNameInput);
+      customerNameInput.addEventListener("compositionend", filterCustomerNameInput);
+      customerNameInput.addEventListener("paste", event => {
+        event.preventDefault();
+        const input = event.currentTarget;
+        const pastedText = event.clipboardData.getData("text").replace(disallowedNameCharacters, "");
+        input.setRangeText(pastedText, input.selectionStart, input.selectionEnd, "end");
+      });
+
+      function readPhotoDataUrl(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.addEventListener("load", () => {
+            if (typeof reader.result !== "string") {
+              reject(new Error("Foto gagal dibaca."));
+              return;
+            }
+            resolve(reader.result);
+          }, { once: true });
+          reader.addEventListener("error", () => {
+            reject(reader.error || new Error("Foto gagal dibaca."));
+          }, { once: true });
+          reader.readAsDataURL(file);
+        });
+      }
+
+      async function apiRequest(path, options = {}) {
+        const hasBody = options.body !== undefined;
+        const requestOptions = {
+          ...options,
+          headers: {
+            ...(hasBody ? { "Content-Type": "application/json" } : {}),
+            ...(options.headers || {})
+          }
+        };
+
+        let response;
+        try {
+          response = await fetch(path, requestOptions);
+        } catch {
+          throw new Error("Server tidak terhubung. Periksa apakah server aplikasi aktif dan alamat yang dibuka benar.");
+        }
+
+        const rawText = await response.text();
+        if (!rawText) {
+          if (!response.ok) throw new Error("Permintaan gagal diproses.");
+          return null;
+        }
+
+        let result;
+        try {
+          result = JSON.parse(rawText);
+        } catch {
+          if (rawText.trim().startsWith("<")) {
+            throw new Error("Server mengembalikan halaman HTML, bukan data API. Pastikan aplikasi dibuka melalui alamat server yang benar.");
+          }
+          throw new Error("Respons server bukan JSON yang valid.");
+        }
+        if (!response.ok) throw new Error(result && result.error ? result.error : "Permintaan gagal diproses.");
+        return result;
+      }
+
+      function enterApplication() {
+        loginScreen.hidden = true;
+        document.getElementById("app-shell").hidden = false;
+        connectionStatus.textContent = "Terhubung ke server aplikasi";
+        connectionStatus.classList.remove("error");
+        connectionStatus.classList.add("connected");
+        document.getElementById("customer-name").focus();
+      }
+
+      loginForm.addEventListener("submit", async event => {
+        event.preventDefault();
+        loginError.hidden = true;
+        const submitButton = loginForm.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        try {
+          const session = await apiRequest("/api/access/login", {
+            method: "POST",
+            body: JSON.stringify({ code: new FormData(loginForm).get("code") })
+          });
+          loginForm.reset();
+          if (session.role === "receiver" || session.role === "manager") {
+            window.location.assign("/penerima");
+          } else {
+            enterApplication();
+          }
+        } catch (error) {
+          loginError.textContent = error.message;
+          loginError.hidden = false;
+        } finally {
+          submitButton.disabled = false;
+        }
+      });
+
+      logoutButton.addEventListener("click", async () => {
+        logoutButton.disabled = true;
+        logoutError.hidden = true;
+        try {
+          await apiRequest("/api/logout", { method: "POST" });
+          document.getElementById("app-shell").hidden = true;
+          loginScreen.hidden = false;
+          loginForm.reset();
+          form.reset();
+          connectionStatus.classList.remove("connected");
+          loginForm.querySelector('[name="code"]').focus();
+        } catch (error) {
+          logoutError.textContent = `Gagal keluar: ${error.message}`;
+          logoutError.hidden = false;
+        } finally {
+          logoutButton.disabled = false;
+        }
+      });
+
+      form.addEventListener("submit", async event => {
+        event.preventDefault();
+        errorElement.hidden = true;
+        if (!form.reportValidity()) return;
+        const fields = new FormData(form);
+        const notification = {
+          customerName: String(fields.get("customerName") || "").trim(),
+          department: String(fields.get("department") || ""),
+          description: String(fields.get("description") || "").trim(),
+        };
+        const photoFile = fields.get("photo");
+        if (photoFile instanceof File && photoFile.size > maxPhotoSize) {
+          errorElement.textContent = "Ukuran foto maksimal 5 MB.";
+          errorElement.hidden = false;
+          return;
+        }
+        const submitButton = form.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        try {
+          if (photoFile instanceof File && photoFile.size > 0) {
+            notification.photo = await readPhotoDataUrl(photoFile);
+          }
+          await apiRequest("/api/notifications", { method: "POST", body: JSON.stringify(notification) });
+        } catch (error) {
+          errorElement.textContent = `Notifikasi gagal disimpan: ${error.message}`;
+          errorElement.hidden = false;
+          return;
+        } finally {
+          submitButton.disabled = false;
+        }
+        form.reset();
+        connectionStatus.textContent = `Notifikasi untuk unit ${notification.department} berhasil dikirim.`;
+        connectionStatus.classList.remove("error");
+        connectionStatus.classList.add("connected");
+        document.getElementById("customer-name").focus();
+      });
+
+      apiRequest("/api/session")
+        .then(session => {
+          if (session.authenticated && (session.role === "receiver" || session.role === "manager")) {
+            window.location.replace("/penerima");
+          } else if (session.authenticated && session.role === "guard") {
+            enterApplication();
+          } else {
+            loginScreen.hidden = false;
+          }
+        })
+        .catch(error => {
+          loginScreen.hidden = false;
+          if (!error.message.includes("kode akses")) {
+            loginError.textContent = "Server belum terhubung. Periksa apakah server aplikasi aktif dan alamat yang dibuka benar.";
+            loginError.hidden = false;
+          }
+        });
+    })();
+  </script>
+</body>
+</html>
